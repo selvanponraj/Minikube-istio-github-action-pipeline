@@ -3,7 +3,7 @@ name: BookInfo CI/CD with Istio
 on:
   push:
     branches:
-      - main
+      - system/minikube-arm-support
 
 jobs:
   MiniKube_Setup:
@@ -37,9 +37,16 @@ jobs:
       run: |
         if ! command -v minikube &> /dev/null; then
           echo "Minikube is not installed. Installing Minikube..."
-          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          chmod +x minikube-linux-amd64
-          sudo mv minikube-linux-amd64 /usr/local/bin/minikube
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-arm64
+            chmod +x minikube-linux-arm64
+            sudo mv minikube-linux-arm64 /usr/local/bin/minikube
+          else
+            curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+            chmod +x minikube-linux-amd64
+            sudo mv minikube-linux-amd64 /usr/local/bin/minikube
+          fi
         else
           echo "Minikube is already installed."
           minikube version
@@ -83,7 +90,12 @@ jobs:
       run: |
         if ! command -v kubectl &> /dev/null; then
           echo "Installing kubectl..."
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
+          else
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          fi
           chmod +x kubectl
           mkdir -p $HOME/bin
           mv kubectl $HOME/bin/
@@ -107,7 +119,12 @@ jobs:
         run: |
           if ! command -v kubectl &> /dev/null; then
             echo "Installing kubectl..."
-            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            ARCH=$(uname -m)
+            if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+              curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
+            else
+              curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            fi
             chmod +x kubectl
             sudo mv kubectl /usr/local/bin/
           fi
@@ -115,11 +132,17 @@ jobs:
 
       - name: Check and Install Istio
         run: |
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            ISTIO_ARCH="arm64"
+          else
+            ISTIO_ARCH="amd64"
+          fi
           if [ ! -d "$HOME/istio-1.25.0" ]; then
-            echo "Istio not found. Downloading and installing Istio 1.25.0 to $HOME..."
-            curl -LO https://github.com/istio/istio/releases/download/1.25.0/istio-1.25.0-linux-amd64.tar.gz
-            tar -xzf istio-1.25.0-linux-amd64.tar.gz -C $HOME
-            rm istio-1.25.0-linux-amd64.tar.gz
+            echo "Istio not found. Downloading and installing Istio 1.25.0 for $ISTIO_ARCH to $HOME..."
+            curl -LO https://github.com/istio/istio/releases/download/1.25.0/istio-1.25.0-linux-${ISTIO_ARCH}.tar.gz
+            tar -xzf istio-1.25.0-linux-${ISTIO_ARCH}.tar.gz -C $HOME
+            rm istio-1.25.0-linux-${ISTIO_ARCH}.tar.gz
           else
             echo "Istio directory already exists at $HOME/istio-1.25.0"
           fi
