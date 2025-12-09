@@ -2,7 +2,7 @@ name: Test Runner
 on:
   push:
     branches:
-      - main
+      - system/test-github-workflow
 jobs:
   test:
     runs-on: self-hosted
