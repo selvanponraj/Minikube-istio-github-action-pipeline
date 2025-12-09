@@ -157,4 +157,4 @@ To clean up the deployed resources, run:
 kubectl delete all --all --namespace=default
 ```
 
-
+Testing Minikube with Istio
